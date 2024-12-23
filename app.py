@@ -141,8 +141,16 @@ st.markdown(
         background: -webkit-linear-gradient(#4CAF50, #2e7d32);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+    }     
+    /* 滑块的按钮颜色 */
+    .stSlider > div[data-baseweb="slider"] > div > div > div {
+        background: #007BFF !important; /* 蓝色 */
+        border: 2px solid #0056b3 !important; /* 边框深蓝 */
     }
-
+    /* 滑块的轨道颜色 */
+    .stSlider > div[data-baseweb="slider"] > div > div {
+        background: #007BFF; /* 蓝色 */
+    }
     /* 按钮组样式 */
     .button-group {
         display: flex;
@@ -205,11 +213,13 @@ if not uploaded_file:
 img = Image.open(uploaded_file)
 img = np.array(img)
 
-# 创建布局与功能
-col1, col2, col3 = st.columns([1, 2, 2])
 
+# 定义布局，包括一个分隔列
+col1, divider, col2, col3 = st.columns([1, 0.05, 2, 2])
+
+# 在 col1 中放置菜单
 with col1:
-    st.markdown("### 操作菜单")
+    st.markdown("### 图像算法菜单")
     operation = st.selectbox("选择操作类型", ["图像的几何运算", "图像对比度增强", "图像平滑处理", "图像分割"])
 
     params = {}
@@ -273,10 +283,28 @@ with col1:
         segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K-means"], "segmentation_ops")
         processed_img = image_segmentation(img, segmentation)
 
+# 在 divider 中放置竖线分割布局
+with divider:
+    st.markdown(
+        """
+        <style>
+        .vertical-line {
+            border-left: 2px solid #cccccc; /* 竖线颜色 */
+            height: 500px; 
+            display: inline-block; /* 保持和内容对齐 */
+        }
+        </style>
+        <div class="vertical-line"></div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# 在 col2 中放置原始图片
 with col2:
     st.markdown("### 原始图片")
     st.image(img, caption="原始图片", use_container_width=True)
 
+# 在 col3 中放置处理后图片
 with col3:
     st.markdown("### 处理后图片")
 
@@ -300,4 +328,99 @@ with col3:
 st.markdown('<div class="footer">© 2024 图像处理平台. All Rights Reserved.</div>', unsafe_allow_html=True)
 
 
+# # 创建布局与功能
+# col1, col2, col3 = st.columns([1, 2, 2])
+#
+# with col1:
+#     st.markdown("### 图像算法菜单")
+#     operation = st.selectbox("选择操作类型", ["图像的几何运算", "图像对比度增强", "图像平滑处理", "图像分割"])
+#
+#     params = {}
+#     processed_img = None
+#
+#     def render_buttons(options, session_key):
+#         current_selection = st.session_state.get(session_key, options[0])
+#         st.session_state[session_key] = current_selection
+#         button_layout = st.columns(len(options))
+#
+#         for idx, option in enumerate(options):
+#             with button_layout[idx]:
+#                 button_class = "selected" if st.session_state[session_key] == option else ""
+#                 if st.button(option, key=f"{session_key}_{idx}"):
+#                     st.session_state[session_key] = option
+#
+#         return st.session_state[session_key]
+#
+#     if operation == "图像的几何运算":
+#         action = render_buttons(["平移", "旋转", "缩放", "镜像"], "geometry_ops")
+#
+#         if action == "平移":
+#             params["dx"] = st.slider("水平平移", -1000, 1000, 0, step=50)
+#             params["dy"] = st.slider("垂直平移", -1000, 1000, 0, step=50)
+#             processed_img = geometric_operations(img, "平移", params)
+#
+#         elif action == "旋转":
+#             params["angle"] = st.slider("旋转角度 (°)", -360, 360, 0, step=15)
+#             processed_img = geometric_operations(img, "旋转", params)
+#
+#         elif action == "缩放":
+#             params["fx"] = st.slider("水平缩放系数", 0.1, 5.0, 1.0, step=0.1)
+#             params["fy"] = st.slider("垂直缩放系数", 0.1, 5.0, 1.0, step=0.1)
+#             processed_img = geometric_operations(img, "缩放", params)
+#
+#         elif action == "镜像":
+#             processed_img = geometric_operations(img, "镜像", {})
+#
+#     elif operation == "图像对比度增强":
+#         enhancement = render_buttons(["灰度变换", "直方图均衡化", "CLAHE方法", "Gamma 调整"], "contrast_ops")
+#
+#         if enhancement == "灰度变换":
+#             processed_img = contrast_enhancement(img, "灰度变换")
+#
+#         elif enhancement == "直方图均衡化":
+#             processed_img = contrast_enhancement(img, "直方图均衡化")
+#
+#         elif enhancement == "CLAHE方法":
+#             processed_img = contrast_enhancement(img, "CLAHE")
+#
+#         elif enhancement == "Gamma 调整":
+#             gamma = st.slider("Gamma 值", 0.01, 10.0, 1.0, step=0.01)
+#             processed_img = contrast_enhancement(img, "Gamma 调整", {"gamma": gamma})
+#
+#     elif operation == "图像平滑处理":
+#         smoothing = render_buttons(["均值滤波", "中值滤波", "高斯滤波", "双边滤波"], "smoothing_ops")
+#         kernel = st.slider("滤波器大小", 1, 31, 5, step=2)
+#         processed_img = smoothing_operations(img, smoothing, kernel)
+#
+#     elif operation == "图像分割":
+#         segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K-means"], "segmentation_ops")
+#         processed_img = image_segmentation(img, segmentation)
+#
+# with col2:
+#     st.markdown("### 原始图片")
+#     st.image(img, caption="原始图片", use_container_width=True)
+#
+# with col3:
+#     st.markdown("### 处理后图片")
+#
+#     if processed_img is not None:
+#         st.image(processed_img, caption="处理后图片", use_container_width=True)
+#
+#         # 添加下载选项
+#         result_image = Image.fromarray(processed_img)
+#         buffer = io.BytesIO()
+#         result_image.save(buffer, format="PNG")
+#         byte_data = buffer.getvalue()
+#
+#         st.download_button(
+#             label="下载处理后图片",
+#             data=byte_data,
+#             file_name="processed_image.png",
+#             mime="image/png",
+#         )
+#
+# # 页面底部声明
+# st.markdown('<div class="footer">© 2024 图像处理平台. All Rights Reserved.</div>', unsafe_allow_html=True)
+#
+#
 
