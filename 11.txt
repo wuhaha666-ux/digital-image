@@ -142,14 +142,16 @@ st.markdown(
         background: -webkit-linear-gradient(#4CAF50, #2e7d32);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-    }
-    
+    }     
     /* 滑块的按钮颜色 */
     .stSlider > div[data-baseweb="slider"] > div > div > div {
         background: #007BFF !important; /* 蓝色 */
         border: 2px solid #0056b3 !important; /* 边框深蓝 */
     }
-    
+    /* 滑块的轨道颜色 */
+    .stSlider > div[data-baseweb="slider"] > div > div {
+        background: #007BFF; /* 蓝色 */
+    }
     /* 按钮组样式 */
     .button-group {
         display: flex;
@@ -201,7 +203,7 @@ st.markdown(
 )
 
 # 标题
-st.markdown('<div class="title">数字图像处理算法集成系统</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">图像处理平台 - WCH</div>', unsafe_allow_html=True)
 
 # 上传图片
 uploaded_file = st.file_uploader("", type=["jpg", "png", "bmp"])
@@ -211,6 +213,7 @@ if not uploaded_file:
 
 img = Image.open(uploaded_file)
 img = np.array(img)
+
 
 # 定义布局，包括一个分隔列
 col1, divider, col2, col3 = st.columns([1, 0.05, 2, 2])
@@ -278,7 +281,7 @@ with col1:
         processed_img = smoothing_operations(img, smoothing, kernel)
 
     elif operation == "图像分割":
-        segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K - means"], "segmentation_ops")
+        segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K-means"], "segmentation_ops")
         processed_img = image_segmentation(img, segmentation)
 
 # 在 divider 中放置竖线分割布局
@@ -296,89 +299,34 @@ with divider:
         """,
         unsafe_allow_html=True,
     )
+
 # 在 col2 中放置原始图片
 with col2:
-    st.image(img, use_container_width=True)
-    # 手动添加标题
-    st.markdown(
-        """
-        <div style='text-align: center; font-size: 2em; font-weight: bold; color: #333333; margin-top: 10px;'>
-        原始图片
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 原始图片")
+    st.image(img, caption="原始图片", use_container_width=True)
 
 # 在 col3 中放置处理后图片
 with col3:
+    st.markdown("### 处理后图片")
+
     if processed_img is not None:
-        st.image(processed_img, use_container_width=True)
+        st.image(processed_img, caption="处理后图片", use_container_width=True)
 
-        # 动态生成标题
-        operation_caption = "处理后图片"
-        if operation == "图像的几何运算":
-            operation_caption = f"{action} 操作"
-        elif operation == "图像对比度增强":
-            operation_caption = f"{enhancement} 操作"
-        elif operation == "图像平滑处理":
-            operation_caption = f"{smoothing} 操作"
-        elif operation == "图像分割":
-            operation_caption = f"{segmentation} 操作"
-
-        # 手动添加动态标题
-        st.markdown(
-            f"""
-            <div style='text-align: center; font-size: 2em; font-weight: bold; color: #333333; margin-top: 10px;'>
-            {operation_caption}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # 添加下载选项，靠右对齐
+        # 添加下载选项
         result_image = Image.fromarray(processed_img)
         buffer = io.BytesIO()
         result_image.save(buffer, format="PNG")
         byte_data = buffer.getvalue()
 
-        # 自定义按钮样式并靠右对齐
-        st.markdown(
-            """
-            <div style="display: flex; justify-content: flex-end; padding-top: 10px;">
-                <a href="data:file/png;base64,{data}" download="processed_image.png" style="
-                text-decoration: none;
-                padding: 10px 20px;
-                color: white;
-                background-color: #4CAF50;
-                border: none;
-                border-radius: 5px;
-                text-align: center;
-                font-size: 1em;
-                font-weight: bold;
-                cursor: pointer;">下载处理后图片</a>
-            </div>
-            """.format(data=base64.b64encode(byte_data).decode()),
-            unsafe_allow_html=True,
+        st.download_button(
+            label="下载处理后图片",
+            data=byte_data,
+            file_name="processed_image.png",
+            mime="image/png",
         )
 
 # 页面底部声明
-st.markdown(
-    """
-    <style>
-    .footer-author {
-        text-align: center;
-        font-size: 1.5em;
-        font-weight: bold;
-        color: #333333;
-        margin-top: 50px;
-    }
-    </style>
-    <div class="footer-author">222241807529 王晨好</div>
-    """,
-    unsafe_allow_html=True,
-)
-# 页面底部声明
-st.markdown('<div class="footer">© 222241807529 王晨好. All Rights Reserved.</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer">© 2024 图像处理平台. All Rights Reserved.</div>', unsafe_allow_html=True)
 
 
 
