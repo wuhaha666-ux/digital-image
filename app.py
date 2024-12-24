@@ -204,7 +204,8 @@ st.markdown(
 st.markdown('<div class="title">数字图像处理算法集成系统</div>', unsafe_allow_html=True)
 
 # 上传图片
-uploaded_file = st.file_uploader("", type=["jpg", "png", "bmp"])
+uploaded_file = st.file_uploader("选择文件", type=["jpg", "png", "bmp"], label_visibility="collapsed")
+
 if not uploaded_file:
     st.warning("请上传图片！")
     st.stop()
