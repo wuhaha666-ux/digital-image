@@ -5,7 +5,6 @@ from PIL import Image
 import numpy as np
 import base64
 
-
 def geometric_operations(image, operation, params):
     def translate(image, dx, dy):
         M = np.float32([[1, 0, dx], [0, 1, dy]])
@@ -31,22 +30,30 @@ def geometric_operations(image, operation, params):
 
     return operations[operation](image, params)
 
+
 def contrast_enhancement(image, operation, params=None):
     def grayscale(image):
-        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        if len(image.shape) == 2:  # 单通道灰度图
+            gray = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        else:  # 转换为灰度图
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)  # 转为三通道
 
     def histogram_equalization(image):
-        gray = grayscale(image)
-        return cv2.equalizeHist(gray)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        equalized = cv2.equalizeHist(gray)
+        return cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)  # 转换为三通道
 
     def clahe(image):
-        gray = grayscale(image)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         clahe_obj = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        return clahe_obj.apply(gray)
+        clahe_result = clahe_obj.apply(gray)
+        return cv2.cvtColor(clahe_result, cv2.COLOR_GRAY2BGR)  # 转换为三通道
 
     def gamma_adjustment(image, gamma):
         lookup_table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(256)]).astype("uint8")
-        return cv2.LUT(image, lookup_table)
+        adjusted = cv2.LUT(image, lookup_table)
+        return adjusted
 
     operations = {
         "灰度变换": lambda img, params: grayscale(img),
@@ -56,6 +63,7 @@ def contrast_enhancement(image, operation, params=None):
     }
 
     return operations[operation](image, params)
+
 
 def smoothing_operations(image, operation, kernel_size):
     def mean_blur(image, kernel_size):
@@ -143,13 +151,13 @@ st.markdown(
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    
+
     /* 滑块的按钮颜色 */
     .stSlider > div[data-baseweb="slider"] > div > div > div {
         background: #007BFF !important; /* 蓝色 */
         border: 2px solid #0056b3 !important; /* 边框深蓝 */
     }
-    
+
     /* 按钮组样式 */
     .button-group {
         display: flex;
@@ -194,7 +202,7 @@ st.markdown(
         font-size: 0.9em;
         color: gray;
         margin-top: 20px;
-    }    
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -214,7 +222,42 @@ img = Image.open(uploaded_file)
 img = np.array(img)
 
 # 定义布局，包括一个分隔列
-col1, divider, col2, col3 = st.columns([1, 0.05, 2, 2])
+col1, divider, col2, col3 = st.columns([1.5, 0.05, 2, 2])
+st.markdown(
+    """
+    <style>
+    /* 修改按钮样式 */
+    .stButton > button {
+        font-size: 2em !important; /* 增大字体大小 */
+        font-weight: bold !important; /* 加粗字体 */
+        background-color: white !important; /* 按钮背景改为白色 */
+        color: black !important; /* 按钮文字颜色为黑色 */
+        border: 2px solid black !important; /* 添加黑色边框 */
+        border-radius: 10px !important; /* 圆角样式 */
+        padding: 15px 25px !important; /* 增加内边距 */
+        transition: background-color 0.3s, color 0.3s !important; /* 平滑动画效果 */
+    }
+    .stButton > button:hover {
+        background-color: red !important; /* 鼠标悬停背景变为红色 */
+        color: white !important; /* 鼠标悬停文字变为白色 */
+    }
+    
+    /* 修改下拉菜单样式 */
+    .stSelectbox > div {
+        font-size: 1em !important; /* 增大下拉菜单字体大小 */
+        font-weight: bold !important; /* 加粗字体 */
+        color: black !important; /* 设置文字为黑色 */
+    }
+    /* 修改滑动轴标签样式 */
+    div.stSlider > label {
+        font-size: 2em !important; /* 增大滑动轴标签字体 */
+        font-weight: bold !important; /* 加粗滑动轴标签 */
+        color: black !important; /* 滑动轴标签字体颜色 */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # 在 col1 中放置菜单
 with col1:
@@ -222,6 +265,7 @@ with col1:
     operation = st.selectbox("选择操作类型", ["图像的几何运算", "图像对比度增强", "图像平滑处理", "图像分割"])
 
     params = {}
+    param_text = "未设置参数"  # 定义默认参数文本
     processed_img = None
 
     def render_buttons(options, session_key):
@@ -243,43 +287,53 @@ with col1:
         if action == "平移":
             params["dx"] = st.slider("水平平移", -1000, 1000, 0, step=50)
             params["dy"] = st.slider("垂直平移", -1000, 1000, 0, step=50)
+            param_text = f"水平平移: {params['dx']}, 垂直平移: {params['dy']}"
             processed_img = geometric_operations(img, "平移", params)
 
         elif action == "旋转":
             params["angle"] = st.slider("旋转角度 (°)", -360, 360, 0, step=15)
+            param_text = f"旋转角度: {params['angle']}°"
             processed_img = geometric_operations(img, "旋转", params)
 
         elif action == "缩放":
             params["fx"] = st.slider("水平缩放系数", 0.1, 5.0, 1.0, step=0.1)
             params["fy"] = st.slider("垂直缩放系数", 0.1, 5.0, 1.0, step=0.1)
+            param_text = f"水平缩放系数: {params['fx']}, 垂直缩放系数: {params['fy']}"
             processed_img = geometric_operations(img, "缩放", params)
 
         elif action == "镜像":
+            param_text = "镜像操作"
             processed_img = geometric_operations(img, "镜像", {})
 
     elif operation == "图像对比度增强":
-        enhancement = render_buttons(["灰度变换", "直方图均衡化", "CLAHE方法", "Gamma 调整"], "contrast_ops")
+        enhancement = render_buttons(["灰 度 变 换", "直方图均衡化", "CLAHE方法", "Gamma 调整"], "contrast_ops")
 
-        if enhancement == "灰度变换":
+        if enhancement == "灰 度 变 换":
+            param_text = "灰度变换"
             processed_img = contrast_enhancement(img, "灰度变换")
 
         elif enhancement == "直方图均衡化":
+            param_text = "直方图均衡化"
             processed_img = contrast_enhancement(img, "直方图均衡化")
 
         elif enhancement == "CLAHE方法":
+            param_text = "CLAHE方法"
             processed_img = contrast_enhancement(img, "CLAHE")
 
         elif enhancement == "Gamma 调整":
             gamma = st.slider("Gamma 值", 0.01, 10.0, 1.0, step=0.01)
+            param_text = f"Gamma 值: {gamma}"
             processed_img = contrast_enhancement(img, "Gamma 调整", {"gamma": gamma})
 
     elif operation == "图像平滑处理":
         smoothing = render_buttons(["均值滤波", "中值滤波", "高斯滤波", "双边滤波"], "smoothing_ops")
         kernel = st.slider("滤波器大小", 1, 31, 5, step=2)
+        param_text = f"滤波器大小: {kernel}"
         processed_img = smoothing_operations(img, smoothing, kernel)
 
     elif operation == "图像分割":
-        segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K - means"], "segmentation_ops")
+        segmentation = render_buttons(["边缘法分割", "阈值法分割", "区域法分割", "K - means法"], "segmentation_ops")
+        param_text = segmentation
         processed_img = image_segmentation(img, segmentation)
 
 # 在 divider 中放置竖线分割布局
@@ -336,17 +390,20 @@ with col3:
             unsafe_allow_html=True,
         )
 
-        # 添加下载选项，靠右对齐
+        # 添加下载选项，显示参数文本和按钮
         result_image = Image.fromarray(processed_img)
         buffer = io.BytesIO()
         result_image.save(buffer, format="PNG")
         byte_data = buffer.getvalue()
 
-        # 自定义按钮样式并靠右对齐
+        # 参数文本和按钮一起显示
         st.markdown(
-            """
-            <div style="display: flex; justify-content: flex-end; padding-top: 10px;">
-                <a href="data:file/png;base64,{data}" download="processed_image.png" style="
+            f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px;">
+                <span style="font-size: 1.25em; font-weight: bold; color: black; margin-right: 10px;">
+                当前参数（操作）: {param_text}
+                </span>
+                <a href="data:file/png;base64,{base64.b64encode(byte_data).decode()}" download="processed_image.png" style="
                 text-decoration: none;
                 padding: 10px 20px;
                 color: white;
@@ -356,9 +413,10 @@ with col3:
                 text-align: center;
                 font-size: 1em;
                 font-weight: bold;
-                cursor: pointer;">下载处理后图片</a>
+                cursor: pointer;">
+                下载处理后图片</a>
             </div>
-            """.format(data=base64.b64encode(byte_data).decode()),
+            """,
             unsafe_allow_html=True,
         )
 
@@ -380,6 +438,8 @@ st.markdown(
 )
 # 页面底部声明
 st.markdown('<div class="footer">© 222241807529 王晨好. All Rights Reserved.</div>', unsafe_allow_html=True)
+
+
 
 
 
